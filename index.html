@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Falkirk Side-Event Display</title>
+    <style>
+        body {
+            background-color: #111;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+        #event-name { font-size: 8rem; font-weight: bold; margin: 0; color: #00ffcc; text-transform: uppercase; }
+        #group-info { font-size: 5rem; color: #ffcc00; margin: 20px 0; }
+        #next-up { font-size: 2.5rem; color: #aaa; border-top: 2px solid #444; padding-top: 20px; }
+        .silence-mode { background-color: #800 !important; }
+        #silence-alert { display: none; font-size: 3rem; background: yellow; color: black; padding: 10px 50px; border-radius: 50px; margin-top: 30px; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="event-name">WAITING...</div>
+    <div id="group-info">Group --</div>
+    <div id="next-up">Next: Please check the schedule</div>
+    <div id="silence-alert">⚠️ ABSOLUTE SILENCE REQUIRED ⚠️</div>
+
+    <script>
+        function updateDisplay() {
+            const data = JSON.parse(localStorage.getItem('cubeDisplay') || '{}');
+            if (data.event) {
+                document.getElementById('event-name').innerText = data.event;
+                document.getElementById('group-info').innerText = "Group " + data.group;
+                document.getElementById('next-up').innerText = "Next: " + data.next;
+                
+                if (data.isSilent === "true") {
+                    document.body.classList.add('silence-mode');
+                    document.getElementById('silence-alert').style.display = "block";
+                } else {
+                    document.body.classList.remove('silence-mode');
+                    document.getElementById('silence-alert').style.display = "none";
+                }
+            }
+        }
+        // Check for updates every 1 second
+        setInterval(updateDisplay, 1000);
+        window.onload = updateDisplay;
+    </script>
+</body>
+</html>
