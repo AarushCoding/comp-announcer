@@ -1,39 +1,153 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Comp Controller</title>
+    <meta charset="UTF-8">
+    <title>Falkirk Comp Stage Display</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #eee; }
-        input, select, button { padding: 10px; margin: 5px; font-size: 1.2rem; }
-        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        :root {
+            --bg-color: #0a0a0a;
+            --text-main: #00ffcc;
+            --text-sub: #ffcc00;
+            --accent-gray: #333;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.4s;
+            overflow: hidden;
+        }
+
+        /* Silence Mode Styles */
+        body.silence { background-color: #500; }
+        #silence-banner { 
+            display: none; 
+            background: #ff0; 
+            color: #000; 
+            font-weight: bold; 
+            font-size: 2rem; 
+            padding: 10px; 
+            text-align: center;
+        }
+
+        /* The Grid Layout */
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 40px;
+            gap: 40px;
+        }
+
+        /* Left Side (Current Event) */
+        .current-side {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-right: 4px solid var(--accent-gray);
+            padding-right: 40px;
+        }
+
+        /* Right Side (Upcoming) */
+        .next-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: left;
+        }
+
+        /* Rows and Text */
+        .label { font-size: 1.5rem; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
+        .event-text { font-size: 6rem; font-weight: 900; color: var(--text-main); margin: 10px 0 40px 0; }
+        .group-text { font-size: 5rem; font-weight: 700; color: var(--text-sub); }
+        
+        .timer-row {
+            font-size: 10rem;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .next-event-text { font-size: 3rem; font-weight: 600; color: #fff; margin-bottom: 30px; }
+        .next-group-text { font-size: 2.5rem; color: var(--text-sub); }
     </style>
 </head>
 <body>
-    <div class="panel">
-        <h2>Falkirk Comp Controller</h2>
-        <p>Current Event: <input type="text" id="eventInput" value="Pyraminx Round 1"></p>
-        <p>Current Group: <input type="text" id="groupInput" value="A"></p>
-        <p>Next Event: <input type="text" id="nextInput" value="Skewb Round 1"></p>
-        <p>Silence Mode: 
-            <select id="silentInput">
-                <option value="false">Off (Loud)</option>
-                <option value="true">On (SHHH!)</option>
-            </select>
-        </p>
-        <button onclick="update()">UPDATE SCREEN</button>
+
+    <div id="silence-banner">⚠️ ABSOLUTE SILENCE IN PROGRESS ⚠️</div>
+
+    <div class="container">
+        <div class="current-side">
+            <div class="label">Current Event</div>
+            <div id="cur-event" class="event-text">--</div>
+            
+            <div class="label">Current Group</div>
+            <div id="cur-group" class="group-text">--</div>
+
+            <div id="timer" class="timer-row">00:00</div>
+        </div>
+
+        <div class="next-side">
+            <div class="label">Up Next</div>
+            <div id="next-event" class="next-event-text">--</div>
+            
+            <div class="label">Next Group</div>
+            <div id="next-group" class="next-group-text">--</div>
+        </div>
     </div>
 
     <script>
+        let timeLeft = 0;
+        let timerInterval;
+
         function update() {
-            const data = {
-                event: document.getElementById('eventInput').value,
-                group: document.getElementById('groupInput').value,
-                next: document.getElementById('nextInput').value,
-                isSilent: document.getElementById('silentInput').value
-            };
-            localStorage.setItem('cubeDisplay', JSON.stringify(data));
-            alert("Display Updated!");
+            const data = JSON.parse(localStorage.getItem('falkirkSettings') || '{}');
+            
+            // Current Info
+            document.getElementById('cur-event').innerText = data.event || "WAITING";
+            document.getElementById('cur-group').innerText = data.group || "--";
+            
+            // Next Info
+            document.getElementById('next-event').innerText = data.next || "--";
+            document.getElementById('next-group').innerText = data.nextGroup || "--";
+
+            // Silence Mode
+            if (data.isSilent === "true") {
+                document.body.classList.add('silence');
+                document.getElementById('silence-banner').style.display = "block";
+            } else {
+                document.body.classList.remove('silence');
+                document.getElementById('silence-banner').style.display = "none";
+            }
+
+            // Timer Logic
+            if (data.timerAction === "start" && !timerInterval) {
+                timeLeft = (parseInt(data.timerMins) || 10) * 60;
+                startTimer();
+            } else if (data.timerAction === "reset") {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                document.getElementById('timer').innerText = "00:00";
+            }
         }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (timeLeft <= 0) { clearInterval(timerInterval); return; }
+                timeLeft--;
+                let m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                let s = (timeLeft % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        setInterval(update, 1000);
     </script>
 </body>
 </html>
