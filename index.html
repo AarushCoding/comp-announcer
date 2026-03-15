@@ -173,45 +173,73 @@
         </div>
     </div>
 
+    
+        
     <script>
         let wcaSchedule = [];
-
-        // Save Comp ID to local storage so it persists
+    
         function saveCompId() {
-            const id = document.getElementById('compId').value;
+            const id = document.getElementById('compId').value.trim();
             localStorage.setItem('falkirk_wca_id', id);
             fetchWCA();
         }
-
-        async function fetchWCA() {
-            let id = document.getElementById('compId').value.trim();
-            if (!id) return;
-        
-            // Optional: You can try to force it to a specific format if you know 
-            // you'll always use a certain one, but usually, it's better to just
-            // remind yourself to check the URL of the WCA page.
+    
+        // This function cleans up the long WCA names
+        function cleanName(name) {
+            if (!name) return "--";
             
+            let clean = name;
+            // Split by comma or hyphen to remove "Round 1", "Final", etc. from the Event title
+            clean = clean.split(',')[0].split(' - ')[0];
+    
+            // Replace long names with short names
+            const replacements = {
+                "3x3x3 Cube": "3x3",
+                "2x2x2 Cube": "2x2",
+                "4x4x4 Cube": "4x4",
+                "5x5x5 Cube": "5x5",
+                "6x6x6 Cube": "6x6",
+                "7x7x7 Cube": "7x7",
+                "3x3x3 Blindfolded": "3BLD",
+                "4x4x4 Blindfolded": "4BLD",
+                "5x5x5 Blindfolded": "5BLD",
+                "3x3x3 Multi-Blind": "MBLD",
+                "3x3x3 One-Handed": "3OH",
+                "Megaminx": "Megaminx",
+                "Pyraminx": "Pyraminx",
+                "Skewb": "Skewb",
+                "Square-1": "Square-1",
+                "Clock": "Clock"
+            };
+    
+            for (const [formal, short] of Object.entries(replacements)) {
+                if (clean.includes(formal)) return short;
+            }
+            return clean;
+        }
+    
+        // This function tries to extract just the number for the Round
+        function getRound(name) {
+            if (name.toLowerCase().includes("final")) return "Final";
+            const match = name.match(/Round (\d+)/);
+            return match ? match[1] : "";
+        }
+    
+        async function fetchWCA() {
+            const id = document.getElementById('compId').value.trim();
+            if (!id) return;
             try {
-                const response = await fetch(`https://www.worldcubeassociation.org/api/v0/competitions/${id}/wcif/public`);
-                
-                if (!response.ok) {
-                    console.error("Comp not found. check caps!");
-                    document.getElementById('status-bar').innerText = "❌ ID NOT FOUND (CHECK CAPS)";
-                    return;
-                }
-        
+                const response = await fetch(`https://www.worldcubeassociation.org/api/v1/competitions/${id}/wcif/public`);
+                if (!response.ok) throw new Error("Not found");
                 const data = await response.json();
-                document.getElementById('status-bar').innerHTML = '<span class="dot"></span> LIVE COMP SYSTEM';
                 wcaSchedule = data.schedule.venues[0].rooms[0].activities;
-                console.log("Schedule Loaded:", wcaSchedule);
-                update(); // Run update immediately after fetch
+                document.getElementById('status-bar').innerHTML = '<span class="dot"></span> LIVE COMP SYSTEM';
             } catch (e) {
-                console.error("WCA Fetch Error", e);
+                document.getElementById('status-bar').innerText = "❌ ID NOT FOUND (CHECK CAPS)";
             }
         }
-        
+    
         function update() {
-            // 1. Check for manual admin override first
             const manualData = JSON.parse(localStorage.getItem('falkirkSettings') || '{}');
             const now = new Date();
             
@@ -224,40 +252,39 @@
                 nextGroup: manualData.nextGroup || "--",
                 isSilent: manualData.isSilent === "true"
             };
-
-            // 2. If no manual event is set, or if we want to prioritize API, check schedule
-            // Only uses API if manual event is "STANDBY" or empty
+    
+            // API LOGIC
             if (wcaSchedule.length > 0 && (manualData.event === "STANDBY" || !manualData.event)) {
                 const currentAct = wcaSchedule.find(act => {
                     const start = new Date(act.startTime);
                     const end = new Date(act.endTime);
                     return now >= start && now <= end;
                 });
-
+    
                 const nextAct = wcaSchedule.find(act => new Date(act.startTime) > now);
-
+    
                 if (currentAct) {
-                    displayData.event = currentAct.name.split(',')[0]; // Clean up name
-                    displayData.round = ""; // API round info is usually in the name
+                    displayData.event = cleanName(currentAct.name);
+                    displayData.round = getRound(currentAct.name);
                     displayData.group = "API SYNC";
-                    // Auto-Silence if activity code contains 'bf'
                     if (currentAct.activityCode.includes('bf')) displayData.isSilent = true;
                 }
-
+    
                 if (nextAct) {
-                    displayData.next = nextAct.name;
+                    displayData.next = cleanName(nextAct.name);
+                    displayData.nextRound = getRound(nextAct.name);
                 }
             }
-
-            // 3. Render to Screen
+    
+            // RENDER
             document.getElementById('cur-event').innerText = displayData.event;
-            document.getElementById('cur-round').innerText = displayData.round ? "Round " + displayData.round : "";
+            document.getElementById('cur-round').innerText = displayData.round === "Final" ? "Final" : (displayData.round ? "Round " + displayData.round : "--");
             document.getElementById('cur-group').innerText = displayData.group;
             
             document.getElementById('next-event').innerText = displayData.next;
-            document.getElementById('next-round').innerText = displayData.nextRound ? "Round " + displayData.nextRound : "";
+            document.getElementById('next-round').innerText = displayData.nextRound === "Final" ? "Final" : (displayData.nextRound ? "Round " + displayData.nextRound : "--");
             document.getElementById('next-group').innerText = displayData.nextGroup;
-
+    
             if (displayData.isSilent) {
                 document.body.classList.add('silence');
                 document.getElementById('silence-banner').style.display = "block";
@@ -266,27 +293,23 @@
                 document.getElementById('silence-banner').style.display = "none";
             }
         }
-
-        // Double Click for Fullscreen
+    
+        // Fullscreen and Initializers
         document.addEventListener('dblclick', () => {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
         });
-
+    
         window.onload = () => {
             const savedId = localStorage.getItem('falkirk_wca_id');
             if (savedId) {
                 document.getElementById('compId').value = savedId;
                 fetchWCA();
             }
-            update();
+            setInterval(update, 1000);
+            setInterval(fetchWCA, 60000);
         };
-
-        setInterval(update, 1000);
-        setInterval(fetchWCA, 60000); // Re-sync with WCA every minute
     </script>
+    
 </body>
 </html>
