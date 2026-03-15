@@ -2,71 +2,97 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Comp Controller</title>
+    <title>Comp Stage Display Admin</title>
     <style>
-        body { font-family: sans-serif; padding: 40px; background: #f4f4f9; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; color: #333; }
         .card { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .row { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: #666; }
-        input, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
-        button { width: 100%; padding: 15px; background: #00ffcc; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
-        button:hover { background: #00e6b8; }
+        .row { margin-bottom: 12px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.85rem; color: #666; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        .btn-update { width: 100%; padding: 15px; background: #00ffcc; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-top: 10px; }
+        .btn-next { width: 100%; padding: 12px; background: #ffcc00; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { opacity: 0.9; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2 style="margin-top:0">Display Admin</h2>
+    <h2 style="margin-top:0">Comp Stage Display Admin</h2>
+    
     <div class="row">
         <label>Current Event</label>
         <input type="text" id="e">
     </div>
     <div class="row">
+        <label>Current Round</label>
+        <input type="text" id="r">
+    </div>
+    <div class="row">
         <label>Current Group</label>
         <input type="text" id="g">
     </div>
+
+    <button class="btn-next" onclick="cycleGroup()">NEXT GROUP ONLY</button>
+
     <hr>
+
     <div class="row">
-        <label>Next Event</label>
+        <label>Up Next (Event)</label>
         <input type="text" id="n">
     </div>
     <div class="row">
-        <label>Next Group</label>
-        <input type="text" id="ng">
+        <label>Up Next (Round)</label>
+        <input type="text" id="nr">
     </div>
     <div class="row">
-        <label>Mode</label>
+        <label>Up Next (Group)</label>
+        <input type="text" id="ng">
+    </div>
+
+    <div class="row">
+        <label>Silence Mode</label>
         <select id="s">
-            <option value="false">Loud Sunday</option>
-            <option value="true">Silence Saturday</option>
+            <option value="false">Loud</option>
+            <option value="true">Silence</option>
         </select>
     </div>
-    <button onclick="save()">UPDATE DISPLAY</button>
+
+    <button class="btn-update" onclick="save()">UPDATE FULL DISPLAY</button>
 </div>
 
 <script>
-    // Load current data into the textboxes on start
     function loadExisting() {
         const data = JSON.parse(localStorage.getItem('falkirkSettings') || '{}');
         if (data.event) {
             document.getElementById('e').value = data.event;
+            document.getElementById('r').value = data.round;
             document.getElementById('g').value = data.group;
             document.getElementById('n').value = data.next;
+            document.getElementById('nr').value = data.nextRound;
             document.getElementById('ng').value = data.nextGroup;
             document.getElementById('s').value = data.isSilent;
         }
     }
 
+    function cycleGroup() {
+        // Move "Next Group" into "Current Group"
+        // Keeps Current Event and Current Round the same
+        document.getElementById('g').value = document.getElementById('ng').value;
+        save();
+    }
+
     function save() {
         const data = {
             event: document.getElementById('e').value,
+            round: document.getElementById('r').value,
             group: document.getElementById('g').value,
             next: document.getElementById('n').value,
+            nextRound: document.getElementById('nr').value,
             nextGroup: document.getElementById('ng').value,
             isSilent: document.getElementById('s').value
         };
         localStorage.setItem('falkirkSettings', JSON.stringify(data));
-        alert("Display Updated!");
     }
 
     window.onload = loadExisting;
