@@ -2,56 +2,152 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Falkirk Side-Event Display</title>
+    <title>Falkirk Comp Stage Display</title>
     <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --text-main: #00ffcc;
+            --text-sub: #ffcc00;
+            --accent-gray: #333;
+        }
+
         body {
-            background-color: #111;
+            background-color: var(--bg-color);
             color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
             margin: 0;
-            overflow: hidden;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            transition: background-color 0.4s;
+            overflow: hidden;
+        }
+
+        /* Silence Mode Styles */
+        body.silence { background-color: #500; }
+        #silence-banner { 
+            display: none; 
+            background: #ff0; 
+            color: #000; 
+            font-weight: bold; 
+            font-size: 2rem; 
+            padding: 10px; 
             text-align: center;
         }
-        #event-name { font-size: 8rem; font-weight: bold; margin: 0; color: #00ffcc; text-transform: uppercase; }
-        #group-info { font-size: 5rem; color: #ffcc00; margin: 20px 0; }
-        #next-up { font-size: 2.5rem; color: #aaa; border-top: 2px solid #444; padding-top: 20px; }
-        .silence-mode { background-color: #800 !important; }
-        #silence-alert { display: none; font-size: 3rem; background: yellow; color: black; padding: 10px 50px; border-radius: 50px; margin-top: 30px; animation: blink 1s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+
+        /* The Grid Layout */
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 40px;
+            gap: 40px;
+        }
+
+        /* Left Side (Current Event) */
+        .current-side {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-right: 4px solid var(--accent-gray);
+            padding-right: 40px;
+        }
+
+        /* Right Side (Upcoming) */
+        .next-side {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: left;
+        }
+
+        /* Rows and Text */
+        .label { font-size: 1.5rem; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
+        .event-text { font-size: 6rem; font-weight: 900; color: var(--text-main); margin: 10px 0 40px 0; }
+        .group-text { font-size: 5rem; font-weight: 700; color: var(--text-sub); }
+        
+        .timer-row {
+            font-size: 10rem;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .next-event-text { font-size: 3rem; font-weight: 600; color: #fff; margin-bottom: 30px; }
+        .next-group-text { font-size: 2.5rem; color: var(--text-sub); }
     </style>
 </head>
 <body>
 
-    <div id="event-name">WAITING...</div>
-    <div id="group-info">Group --</div>
-    <div id="next-up">Next: Please check the schedule</div>
-    <div id="silence-alert">⚠️ ABSOLUTE SILENCE REQUIRED ⚠️</div>
+    <div id="silence-banner">⚠️ SHHH! BLIND IN PROGRESS ⚠️</div>
+
+    <div class="container">
+        <div class="current-side">
+            <div class="label">Current Event</div>
+            <div id="cur-event" class="event-text">--</div>
+            
+            <div class="label">Current Group</div>
+            <div id="cur-group" class="group-text">--</div>
+
+            <div id="timer" class="timer-row">00:00</div>
+        </div>
+
+        <div class="next-side">
+            <div class="label">Up Next</div>
+            <div id="next-event" class="next-event-text">--</div>
+            
+            <div class="label">Next Group</div>
+            <div id="next-group" class="next-group-text">--</div>
+        </div>
+    </div>
 
     <script>
-        function updateDisplay() {
-            const data = JSON.parse(localStorage.getItem('cubeDisplay') || '{}');
-            if (data.event) {
-                document.getElementById('event-name').innerText = data.event;
-                document.getElementById('group-info').innerText = "Group " + data.group;
-                document.getElementById('next-up').innerText = "Next: " + data.next;
-                
-                if (data.isSilent === "true") {
-                    document.body.classList.add('silence-mode');
-                    document.getElementById('silence-alert').style.display = "block";
-                } else {
-                    document.body.classList.remove('silence-mode');
-                    document.getElementById('silence-alert').style.display = "none";
-                }
+        let timeLeft = 0;
+        let timerInterval;
+
+        function update() {
+            const data = JSON.parse(localStorage.getItem('falkirkSettings') || '{}');
+            
+            // Current Info
+            document.getElementById('cur-event').innerText = data.event || "WAITING";
+            document.getElementById('cur-group').innerText = data.group || "--";
+            
+            // Next Info
+            document.getElementById('next-event').innerText = data.next || "--";
+            document.getElementById('next-group').innerText = data.nextGroup || "--";
+
+            // Silence Mode
+            if (data.isSilent === "true") {
+                document.body.classList.add('silence');
+                document.getElementById('silence-banner').style.display = "block";
+            } else {
+                document.body.classList.remove('silence');
+                document.getElementById('silence-banner').style.display = "none";
+            }
+
+            // Timer Logic
+            if (data.timerAction === "start" && !timerInterval) {
+                timeLeft = (parseInt(data.timerMins) || 10) * 60;
+                startTimer();
+            } else if (data.timerAction === "reset") {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                document.getElementById('timer').innerText = "00:00";
             }
         }
-        // Check for updates every 1 second
-        setInterval(updateDisplay, 1000);
-        window.onload = updateDisplay;
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (timeLeft <= 0) { clearInterval(timerInterval); return; }
+                timeLeft--;
+                let m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                let s = (timeLeft % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        setInterval(update, 1000);
     </script>
 </body>
 </html>
