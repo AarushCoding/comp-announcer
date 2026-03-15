@@ -9,7 +9,7 @@
             --bg-color: #0d0d0d;
             --text-main: #00ffcc;
             --text-sub: #ffcc00;
-            --progress-color: rgba(0, 255, 204, 0.08); /* Very subtle transparent green */
+            --progress-color: rgba(0, 255, 204, 0.08);
         }
 
         body {
@@ -27,13 +27,12 @@
             position: relative;
         }
 
-        /* The Progress Bar Background Layer */
         #bg-progress {
             position: absolute;
             top: 0;
             left: 0;
             height: 100%;
-            width: 0%; /* Will be updated by JS */
+            width: 0%;
             background-color: var(--progress-color);
             z-index: 0;
             transition: width 1s linear;
@@ -42,7 +41,6 @@
         body.silence { background-color: #300; }
         body.silence #bg-progress { background-color: rgba(255, 0, 0, 0.05); }
 
-        /* Ensure all content stays above the progress background */
         #status-bar, #api-controls, .main-display, .bottom-ticker, #silence-banner {
             position: absolute;
             z-index: 10;
@@ -88,8 +86,10 @@
         .main-display { text-align: center; width: 90%; position: relative !important; }
         .label { font-family: 'Bebas Neue', cursive; font-size: 2.5rem; color: #666; letter-spacing: 5px; margin-bottom: 10px; }
         .event-title { font-size: 12rem; line-height: 0.9; margin: 0; color: var(--text-main); font-family: 'Bebas Neue', cursive; }
-        .round-info { font-size: 4rem; color: #fff; margin: 20px 0; font-family: 'Bebas Neue', cursive; }
-        .group-info { font-size: 8rem; color: var(--text-sub); margin: 0; font-family: 'Bebas Neue', cursive; }
+        .round-info { font-size: 4rem; color: #fff; margin: 15px 0; font-family: 'Bebas Neue', cursive; }
+        
+        /* New styling for Format and Limits */
+        .limit-info { font-size: 2.5rem; color: var(--text-sub); font-family: 'Bebas Neue', cursive; letter-spacing: 2px; }
 
         .bottom-ticker {
             bottom: 0;
@@ -134,8 +134,7 @@
         <div id="cur-event" class="event-title">--</div>
         <div class="label" style="margin-top: 40px;">ROUND</div>
         <div id="cur-round" class="round-info">--</div>
-        <div class="label" style="margin-top: 40px;">GROUP</div>
-        <div id="cur-group" class="group-info">--</div>
+        <div id="cur-limits" class="limit-info">--</div>
     </div>
 
     <div class="bottom-ticker">
@@ -151,6 +150,7 @@
 
     <script>
         let wcaSchedule = [];
+        let wcaEvents = [];
 
         function saveCompId() {
             const id = document.getElementById('compId').value.trim();
@@ -179,6 +179,14 @@
             return match ? match[1] : "";
         }
 
+        // Helper to format WCA seconds to MM:SS
+        function formatTime(seconds) {
+            if (!seconds) return null;
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
         async function fetchWCA() {
             const id = document.getElementById('compId').value.trim();
             if (!id) return;
@@ -187,6 +195,7 @@
                 if (!response.ok) throw new Error("Not Found");
                 const data = await response.json();
                 wcaSchedule = data.schedule.venues[0].rooms[0].activities;
+                wcaEvents = data.events;
                 document.getElementById('status-bar').innerHTML = '<span class="dot"></span> LIVE COMP SYSTEM';
             } catch (e) {
                 document.getElementById('status-bar').innerText = "❌ ID NOT FOUND (CHECK CAPS)";
@@ -196,7 +205,14 @@
         function update() {
             const manualData = JSON.parse(localStorage.getItem('falkirkSettings') || '{}');
             const now = new Date();
-            let displayData = { event: manualData.event || "STANDBY", round: manualData.round || "", group: manualData.group || "--", next: manualData.next || "--", nextRound: manualData.nextRound || "", isSilent: manualData.isSilent === "true" };
+            let displayData = { 
+                event: manualData.event || "STANDBY", 
+                round: manualData.round || "", 
+                limits: "--",
+                next: manualData.next || "--", 
+                nextRound: manualData.nextRound || "", 
+                isSilent: manualData.isSilent === "true" 
+            };
 
             let progressWidth = 0;
 
@@ -212,10 +228,24 @@
                 if (currentAct) {
                     displayData.event = cleanName(currentAct.name);
                     displayData.round = getRound(currentAct.name);
-                    displayData.group = "API SYNC";
+                    
+                    // Pull Limit/Format Info
+                    if (currentAct.activityCode) {
+                        const [eCode, rCode] = currentAct.activityCode.split('-r');
+                        const eventData = wcaEvents.find(e => e.id === eCode);
+                        if (eventData && rCode) {
+                            const roundData = eventData.rounds[parseInt(rCode) - 1];
+                            if (roundData) {
+                                let fmt = roundData.format === "a" ? "Ao5" : roundData.format === "m" ? "Mo3" : "Bo3";
+                                let limit = roundData.timeLimit ? `Limit: ${formatTime(roundData.timeLimit.centiseconds / 100)}` : "";
+                                let cutoff = roundData.cutoff ? `Cutoff: ${formatTime(roundData.cutoff.attemptResult / 100)}` : "";
+                                displayData.limits = `${fmt} ${cutoff ? '| ' + cutoff : ''} ${limit ? '| ' + limit : ''}`;
+                            }
+                        }
+                    }
+
                     if (currentAct.activityCode.includes('bf')) displayData.isSilent = true;
 
-                    // Calculate Progress
                     const start = new Date(currentAct.startTime).getTime();
                     const end = new Date(currentAct.endTime).getTime();
                     const total = end - start;
@@ -232,7 +262,8 @@
             document.getElementById('bg-progress').style.width = progressWidth + "%";
             document.getElementById('cur-event').innerText = displayData.event;
             document.getElementById('cur-round').innerText = displayData.round === "Final" ? "Final" : (displayData.round ? "Round " + displayData.round : "--");
-            document.getElementById('cur-group').innerText = displayData.group;
+            document.getElementById('cur-limits').innerText = displayData.limits;
+            
             document.getElementById('next-event').innerText = displayData.next;
             document.getElementById('next-round').innerText = displayData.nextRound === "Final" ? "Final" : (displayData.nextRound ? "Round " + displayData.nextRound : "--");
 
