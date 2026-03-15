@@ -4,113 +4,72 @@
     <meta charset="UTF-8">
     <title>Comp Controller</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            padding: 20px; 
-            background: #f0f2f5; 
-            display: flex; 
-            justify-content: center; 
-        }
-        .card { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 15px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-            width: 100%; 
-            max-width: 500px; 
-        }
-        h2 { color: #333; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .section { margin-bottom: 20px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
-        input, select { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            font-size: 1rem; 
-            box-sizing: border-box;
-        }
-        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-        button { 
-            flex: 1; 
-            padding: 15px; 
-            border: none; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            font-size: 1rem;
-            transition: opacity 0.2s;
-        }
-        .btn-update { background: #00ffcc; color: #000; }
-        .btn-reset { background: #ff4444; color: #fff; }
-        button:hover { opacity: 0.8; }
+        body { font-family: sans-serif; padding: 40px; background: #f4f4f9; }
+        .card { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .row { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: #666; }
+        input, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 15px; background: #00ffcc; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
+        button:hover { background: #00e6b8; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Stage Controller</h2>
-    
-    <div class="section">
+    <h2 style="margin-top:0">Display Admin</h2>
+    <div class="row">
         <label>Current Event</label>
-        <input type="text" id="e" value="3x3 Blindfolded">
+        <input type="text" id="e">
     </div>
-
-    <div class="section">
+    <div class="row">
         <label>Current Group</label>
-        <input type="text" id="g" value="A">
+        <input type="text" id="g">
     </div>
-
     <hr>
-
-    <div class="section">
-        <label>Up Next (Event)</label>
-        <input type="text" id="n" value="4x4 Blindfolded">
+    <div class="row">
+        <label>Next Event</label>
+        <input type="text" id="n">
     </div>
-
-    <div class="section">
+    <div class="row">
         <label>Next Group</label>
-        <input type="text" id="ng" value="A">
+        <input type="text" id="ng">
     </div>
-
-    <div class="section">
-        <label>Silence Mode</label>
+    <div class="row">
+        <label>Mode</label>
         <select id="s">
-            <option value="false">OFF (Loud Sunday)</option>
-            <option value="true">ON (Silence Saturday)</option>
+            <option value="false">Loud Sunday</option>
+            <option value="true">Silence Saturday</option>
         </select>
     </div>
-
-    <div class="section">
-        <label>Timer Minutes</label>
-        <input type="number" id="tm" value="10">
-    </div>
-
-    <div class="btn-group">
-        <button class="btn-update" onclick="send('start')">PUSH TO SCREEN</button>
-        <button class="btn-reset" onclick="send('reset')">RESET TIMER</button>
-    </div>
+    <button onclick="save()">UPDATE DISPLAY</button>
 </div>
 
 <script>
-    function send(action) {
+    // Load current data into the textboxes on start
+    function loadExisting() {
+        const data = JSON.parse(localStorage.getItem('falkirkSettings') || '{}');
+        if (data.event) {
+            document.getElementById('e').value = data.event;
+            document.getElementById('g').value = data.group;
+            document.getElementById('n').value = data.next;
+            document.getElementById('ng').value = data.nextGroup;
+            document.getElementById('s').value = data.isSilent;
+        }
+    }
+
+    function save() {
         const data = {
             event: document.getElementById('e').value,
             group: document.getElementById('g').value,
             next: document.getElementById('n').value,
             nextGroup: document.getElementById('ng').value,
-            isSilent: document.getElementById('s').value,
-            timerMins: document.getElementById('tm').value,
-            timerAction: action
+            isSilent: document.getElementById('s').value
         };
-        // Save to LocalStorage so index.html can read it
         localStorage.setItem('falkirkSettings', JSON.stringify(data));
-        
-        // Visual feedback
-        if(action === 'start') {
-            console.log("Data pushed to display!");
-        }
+        alert("Display Updated!");
     }
+
+    window.onload = loadExisting;
 </script>
 
 </body>
