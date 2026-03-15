@@ -3,136 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <title>Comp Stage Display</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #0d0d0d;
             --text-main: #00ffcc;
             --text-sub: #ffcc00;
-            --accent-gray: #222;
         }
 
         body {
             background-color: var(--bg-color);
             color: white;
             font-family: 'Montserrat', sans-serif;
-            font-weight: 400;
             margin: 0;
             height: 100vh;
             display: flex;
             flex-direction: column;
-            transition: background-color 0.4s;
+            align-items: center;
+            justify-content: center;
             overflow: hidden;
+            transition: background-color 0.4s;
         }
 
-        body.silence { background-color: #400; }
-        
-        #silence-banner { 
-            display: none; 
-            background: #ff0; 
-            color: #000; 
+        body.silence { background-color: #300; }
+
+        /* Flashing Live Dot */
+        #status-bar {
+            position: absolute;
+            top: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-family: 'Bebas Neue', cursive;
-            font-size: 3rem; 
-            padding: 15px; 
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            color: #555;
+        }
+        .dot {
+            height: 12px;
+            width: 12px;
+            background-color: #f00;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; box-shadow: 0 0 0 0px rgba(255, 0, 0, 0.7); }
+            70% { opacity: 0.3; box-shadow: 0 0 0 10px rgba(255, 0, 0, 0); }
+            100% { opacity: 1; }
+        }
+
+        /* Center Content */
+        .main-display {
             text-align: center;
-            letter-spacing: 4px;
+            width: 90%;
         }
-
-        .container {
-            display: flex;
-            flex: 1;
-            padding: 60px;
-            gap: 60px;
-        }
-
-        .current-side {
-            flex: 1.5;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            border-right: 2px solid var(--accent-gray);
-        }
-
-        .next-side {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding-left: 20px;
-        }
-
         .label { 
             font-family: 'Bebas Neue', cursive;
-            font-size: 2.2rem; 
-            color: #777; 
-            letter-spacing: 2px; 
+            font-size: 2.5rem; 
+            color: #666; 
+            letter-spacing: 5px;
+            margin-bottom: 10px;
         }
-
-        .event-text { 
-            font-size: 7rem; 
-            color: var(--text-main); 
-            margin: 0 0 10px 0;
-            line-height: 1;
+        .event-title { 
+            font-size: 12rem; 
+            line-height: 0.9;
+            margin: 0;
+            color: var(--text-main);
+            font-weight: 400;
         }
-
-        .round-text {
-            font-size: 3rem;
+        .round-info {
+            font-size: 4rem;
             color: #fff;
-            margin-bottom: 30px;
+            margin: 20px 0;
         }
-
-        .group-text { 
-            font-size: 6rem; 
-            color: var(--text-sub); 
+        .group-info {
+            font-size: 8rem;
+            color: var(--text-sub);
             margin: 0;
         }
 
-        .next-event-text { 
-            font-size: 3.5rem; 
-            color: #fff; 
-            margin: 10px 0 20px 0; 
-            line-height: 1.1;
+        /* Bottom Ticker */
+        .bottom-ticker {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: #1a1a1a;
+            padding: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            border-top: 1px solid #333;
         }
+        .ticker-item {
+            font-size: 1.8rem;
+            display: flex;
+            gap: 15px;
+        }
+        .ticker-label { color: #666; font-family: 'Bebas Neue'; }
+        .ticker-value { color: #fff; }
 
-        .next-group-text { 
-            font-size: 3rem; 
-            color: var(--text-sub); 
+        /* Silence Banner */
+        #silence-banner {
+            display: none;
+            position: absolute;
+            top: 70px;
+            background: yellow;
+            color: black;
+            padding: 5px 30px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-radius: 50px;
         }
     </style>
 </head>
 <body>
 
-    <div id="silence-banner">⚠️ ABSOLUTE SILENCE IN PROGRESS ⚠️</div>
+    <div id="status-bar"><span class="dot"></span> LIVE COMP SYSTEM</div>
+    <div id="silence-banner">SHHH! SILENCE REQUIRED</div>
 
-    <div class="container">
-        <div class="current-side">
-            <div class="label">NOW COMPETING</div>
-            <div id="cur-event" class="event-text">--</div>
-            <div id="cur-round" class="round-text">--</div>
-            
-            <div class="label">GROUP</div>
-            <div id="cur-group" class="group-text">--</div>
+    <div class="main-display">
+        <div class="label">CURRENTLY COMPETING</div>
+        <div id="cur-event" class="event-title">--</div>
+        <div class="label" style="margin-top: 40px;">ROUND</div>
+        <div id="cur-round" class="round-info">--</div>
+        <div class="label" style="margin-top: 40px;">GROUP</div>
+        <div id="cur-group" class="group-info">--</div>
+    </div>
+
+    <div class="bottom-ticker">
+        <div class="ticker-item">
+            <span class="ticker-label">UP NEXT:</span>
+            <span id="next-event" class="ticker-value">--</span>
         </div>
-
-        <div class="next-side">
-            <div class="label">UP NEXT</div>
-            <div id="next-event" class="next-event-text">--</div>
-            <div id="next-round" class="round-text" style="font-size: 2rem;">--</div>
-            
-            <div class="label">NEXT GROUP</div>
-            <div id="next-group" class="next-group-text">--</div>
+        <div class="ticker-item">
+            <span id="next-round" class="ticker-value">--</span>
+        </div>
+        <div class="ticker-item">
+            <span class="ticker-label">GROUP:</span>
+            <span id="next-group" class="ticker-value">--</span>
         </div>
     </div>
 
     <script>
         function update() {
             const data = JSON.parse(localStorage.getItem('falkirkSettings') || '{}');
-            document.getElementById('cur-event').innerText = data.event || "OFFLINE";
-            document.getElementById('cur-round').innerText = data.round || "";
+            document.getElementById('cur-event').innerText = data.event || "STANDBY";
+            document.getElementById('cur-round').innerText = data.round ? "Round " + data.round : "";
             document.getElementById('cur-group').innerText = data.group || "--";
             
             document.getElementById('next-event').innerText = data.next || "--";
-            document.getElementById('next-round').innerText = data.nextRound || "";
+            document.getElementById('next-round').innerText = data.nextRound ? "Round " + data.nextRound : "";
             document.getElementById('next-group').innerText = data.nextGroup || "--";
 
             if (data.isSilent === "true") {
