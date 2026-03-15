@@ -2,152 +2,116 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Falkirk Comp Stage Display</title>
+    <title>Comp Controller</title>
     <style>
-        :root {
-            --bg-color: #0a0a0a;
-            --text-main: #00ffcc;
-            --text-sub: #ffcc00;
-            --accent-gray: #333;
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            padding: 20px; 
+            background: #f0f2f5; 
+            display: flex; 
+            justify-content: center; 
         }
-
-        body {
-            background-color: var(--bg-color);
-            color: white;
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            transition: background-color 0.4s;
-            overflow: hidden;
+        .card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 500px; 
         }
-
-        /* Silence Mode Styles */
-        body.silence { background-color: #500; }
-        #silence-banner { 
-            display: none; 
-            background: #ff0; 
-            color: #000; 
+        h2 { color: #333; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .section { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            box-sizing: border-box;
+        }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { 
+            flex: 1; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 8px; 
             font-weight: bold; 
-            font-size: 2rem; 
-            padding: 10px; 
-            text-align: center;
+            cursor: pointer; 
+            font-size: 1rem;
+            transition: opacity 0.2s;
         }
-
-        /* The Grid Layout */
-        .container {
-            display: flex;
-            flex: 1;
-            padding: 40px;
-            gap: 40px;
-        }
-
-        /* Left Side (Current Event) */
-        .current-side {
-            flex: 2;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            border-right: 4px solid var(--accent-gray);
-            padding-right: 40px;
-        }
-
-        /* Right Side (Upcoming) */
-        .next-side {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            text-align: left;
-        }
-
-        /* Rows and Text */
-        .label { font-size: 1.5rem; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
-        .event-text { font-size: 6rem; font-weight: 900; color: var(--text-main); margin: 10px 0 40px 0; }
-        .group-text { font-size: 5rem; font-weight: 700; color: var(--text-sub); }
-        
-        .timer-row {
-            font-size: 10rem;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            margin-top: 20px;
-        }
-
-        .next-event-text { font-size: 3rem; font-weight: 600; color: #fff; margin-bottom: 30px; }
-        .next-group-text { font-size: 2.5rem; color: var(--text-sub); }
+        .btn-update { background: #00ffcc; color: #000; }
+        .btn-reset { background: #ff4444; color: #fff; }
+        button:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
 
-    <div id="silence-banner">⚠️ ABSOLUTE SILENCE IN PROGRESS ⚠️</div>
-
-    <div class="container">
-        <div class="current-side">
-            <div class="label">Current Event</div>
-            <div id="cur-event" class="event-text">--</div>
-            
-            <div class="label">Current Group</div>
-            <div id="cur-group" class="group-text">--</div>
-
-            <div id="timer" class="timer-row">00:00</div>
-        </div>
-
-        <div class="next-side">
-            <div class="label">Up Next</div>
-            <div id="next-event" class="next-event-text">--</div>
-            
-            <div class="label">Next Group</div>
-            <div id="next-group" class="next-group-text">--</div>
-        </div>
+<div class="card">
+    <h2>Stage Controller</h2>
+    
+    <div class="section">
+        <label>Current Event</label>
+        <input type="text" id="e" value="3x3 Blindfolded">
     </div>
 
-    <script>
-        let timeLeft = 0;
-        let timerInterval;
+    <div class="section">
+        <label>Current Group</label>
+        <input type="text" id="g" value="A">
+    </div>
 
-        function update() {
-            const data = JSON.parse(localStorage.getItem('falkirkSettings') || '{}');
-            
-            // Current Info
-            document.getElementById('cur-event').innerText = data.event || "WAITING";
-            document.getElementById('cur-group').innerText = data.group || "--";
-            
-            // Next Info
-            document.getElementById('next-event').innerText = data.next || "--";
-            document.getElementById('next-group').innerText = data.nextGroup || "--";
+    <hr>
 
-            // Silence Mode
-            if (data.isSilent === "true") {
-                document.body.classList.add('silence');
-                document.getElementById('silence-banner').style.display = "block";
-            } else {
-                document.body.classList.remove('silence');
-                document.getElementById('silence-banner').style.display = "none";
-            }
+    <div class="section">
+        <label>Up Next (Event)</label>
+        <input type="text" id="n" value="4x4 Blindfolded">
+    </div>
 
-            // Timer Logic
-            if (data.timerAction === "start" && !timerInterval) {
-                timeLeft = (parseInt(data.timerMins) || 10) * 60;
-                startTimer();
-            } else if (data.timerAction === "reset") {
-                clearInterval(timerInterval);
-                timerInterval = null;
-                document.getElementById('timer').innerText = "00:00";
-            }
+    <div class="section">
+        <label>Next Group</label>
+        <input type="text" id="ng" value="A">
+    </div>
+
+    <div class="section">
+        <label>Silence Mode</label>
+        <select id="s">
+            <option value="false">OFF (Loud Sunday)</option>
+            <option value="true">ON (Silence Saturday)</option>
+        </select>
+    </div>
+
+    <div class="section">
+        <label>Timer Minutes</label>
+        <input type="number" id="tm" value="10">
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-update" onclick="send('start')">PUSH TO SCREEN</button>
+        <button class="btn-reset" onclick="send('reset')">RESET TIMER</button>
+    </div>
+</div>
+
+<script>
+    function send(action) {
+        const data = {
+            event: document.getElementById('e').value,
+            group: document.getElementById('g').value,
+            next: document.getElementById('n').value,
+            nextGroup: document.getElementById('ng').value,
+            isSilent: document.getElementById('s').value,
+            timerMins: document.getElementById('tm').value,
+            timerAction: action
+        };
+        // Save to LocalStorage so index.html can read it
+        localStorage.setItem('falkirkSettings', JSON.stringify(data));
+        
+        // Visual feedback
+        if(action === 'start') {
+            console.log("Data pushed to display!");
         }
+    }
+</script>
 
-        function startTimer() {
-            timerInterval = setInterval(() => {
-                if (timeLeft <= 0) { clearInterval(timerInterval); return; }
-                timeLeft--;
-                let m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-                let s = (timeLeft % 60).toString().padStart(2, '0');
-                document.getElementById('timer').innerText = `${m}:${s}`;
-            }, 1000);
-        }
-
-        setInterval(update, 1000);
-    </script>
 </body>
 </html>
