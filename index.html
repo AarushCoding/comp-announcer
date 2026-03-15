@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Comp Stage Display</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #0d0d0d;
@@ -16,6 +16,7 @@
             background-color: var(--bg-color);
             color: white;
             font-family: 'Montserrat', sans-serif;
+            font-weight: 400;
             margin: 0;
             height: 100vh;
             display: flex;
@@ -49,7 +50,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            border-right: 5px solid var(--accent-gray);
+            border-right: 2px solid var(--accent-gray);
         }
 
         .next-side {
@@ -62,17 +63,22 @@
 
         .label { 
             font-family: 'Bebas Neue', cursive;
-            font-size: 2.5rem; 
-            color: #666; 
-            letter-spacing: 3px; 
+            font-size: 2.2rem; 
+            color: #777; 
+            letter-spacing: 2px; 
         }
 
         .event-text { 
-            font-size: 8rem; 
-            font-weight: 900; 
+            font-size: 7rem; 
             color: var(--text-main); 
-            margin: 0 0 40px 0;
-            line-height: 0.9;
+            margin: 0 0 10px 0;
+            line-height: 1;
+        }
+
+        .round-text {
+            font-size: 3rem;
+            color: #fff;
+            margin-bottom: 30px;
         }
 
         .group-text { 
@@ -82,15 +88,14 @@
         }
 
         .next-event-text { 
-            font-size: 4rem; 
-            font-weight: 700; 
+            font-size: 3.5rem; 
             color: #fff; 
-            margin: 10px 0 30px 0; 
+            margin: 10px 0 20px 0; 
             line-height: 1.1;
         }
 
         .next-group-text { 
-            font-size: 3.5rem; 
+            font-size: 3rem; 
             color: var(--text-sub); 
         }
     </style>
@@ -103,6 +108,7 @@
         <div class="current-side">
             <div class="label">NOW COMPETING</div>
             <div id="cur-event" class="event-text">--</div>
+            <div id="cur-round" class="round-text">--</div>
             
             <div class="label">GROUP</div>
             <div id="cur-group" class="group-text">--</div>
@@ -111,6 +117,7 @@
         <div class="next-side">
             <div class="label">UP NEXT</div>
             <div id="next-event" class="next-event-text">--</div>
+            <div id="next-round" class="round-text" style="font-size: 2rem;">--</div>
             
             <div class="label">NEXT GROUP</div>
             <div id="next-group" class="next-group-text">--</div>
@@ -121,8 +128,11 @@
         function update() {
             const data = JSON.parse(localStorage.getItem('falkirkSettings') || '{}');
             document.getElementById('cur-event').innerText = data.event || "OFFLINE";
+            document.getElementById('cur-round').innerText = data.round || "";
             document.getElementById('cur-group').innerText = data.group || "--";
+            
             document.getElementById('next-event').innerText = data.next || "--";
+            document.getElementById('next-round').innerText = data.nextRound || "";
             document.getElementById('next-group').innerText = data.nextGroup || "--";
 
             if (data.isSilent === "true") {
