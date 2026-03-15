@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comp Controller</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #eee; }
+        input, select, button { padding: 10px; margin: 5px; font-size: 1.2rem; }
+        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <h2>Falkirk Comp Controller</h2>
+        <p>Current Event: <input type="text" id="eventInput" value="Pyraminx Round 1"></p>
+        <p>Current Group: <input type="text" id="groupInput" value="A"></p>
+        <p>Next Event: <input type="text" id="nextInput" value="Skewb Round 1"></p>
+        <p>Silence Mode: 
+            <select id="silentInput">
+                <option value="false">Off (Loud)</option>
+                <option value="true">On (SHHH!)</option>
+            </select>
+        </p>
+        <button onclick="update()">UPDATE SCREEN</button>
+    </div>
+
+    <script>
+        function update() {
+            const data = {
+                event: document.getElementById('eventInput').value,
+                group: document.getElementById('groupInput').value,
+                next: document.getElementById('nextInput').value,
+                isSilent: document.getElementById('silentInput').value
+            };
+            localStorage.setItem('cubeDisplay', JSON.stringify(data));
+            alert("Display Updated!");
+        }
+    </script>
+</body>
+</html>
