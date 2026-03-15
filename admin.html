@@ -2,67 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Comp Stage Display Admin</title>
+    <title>Admin - Stage Display</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f9; color: #333; }
-        .card { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .row { margin-bottom: 12px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.85rem; color: #666; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
-        .btn-update { width: 100%; padding: 15px; background: #00ffcc; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-top: 10px; }
-        .btn-next { width: 100%; padding: 12px; background: #ffcc00; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        button:hover { opacity: 0.9; }
-        hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+        body { font-family: sans-serif; padding: 20px; background: #eee; }
+        .card { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .row { margin-bottom: 10px; }
+        label { display: block; font-size: 0.8rem; color: #666; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; margin-top: 10px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
+        .btn-update { background: #00ffcc; }
+        .btn-next { background: #ffcc00; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2 style="margin-top:0">Comp Stage Display Admin</h2>
+    <h3 style="margin-top:0">Current Event</h3>
+    <div class="row"><label>Event Name</label><input type="text" id="e"></div>
+    <div class="row"><label>Round #</label><input type="text" id="r"></div>
+    <div class="row"><label>Group</label><input type="text" id="g"></div>
+    
+    <button class="btn-next" onclick="cycleGroup()">NEXT GROUP</button>
+    <hr>
+    <h3>Up Next</h3>
+    <div class="row"><label>Event Name</label><input type="text" id="n"></div>
+    <div class="row"><label>Round #</label><input type="text" id="nr"></div>
+    <div class="row"><label>Group</label><input type="text" id="ng"></div>
     
     <div class="row">
-        <label>Current Event</label>
-        <input type="text" id="e">
-    </div>
-    <div class="row">
-        <label>Current Round</label>
-        <input type="text" id="r">
-    </div>
-    <div class="row">
-        <label>Current Group</label>
-        <input type="text" id="g">
-    </div>
-
-    <button class="btn-next" onclick="cycleGroup()">NEXT GROUP ONLY</button>
-
-    <hr>
-
-    <div class="row">
-        <label>Up Next (Event)</label>
-        <input type="text" id="n">
-    </div>
-    <div class="row">
-        <label>Up Next (Round)</label>
-        <input type="text" id="nr">
-    </div>
-    <div class="row">
-        <label>Up Next (Group)</label>
-        <input type="text" id="ng">
-    </div>
-
-    <div class="row">
         <label>Silence Mode</label>
-        <select id="s">
-            <option value="false">Loud</option>
-            <option value="true">Silence</option>
-        </select>
+        <select id="s"><option value="false">Off</option><option value="true">On</option></select>
     </div>
-
-    <button class="btn-update" onclick="save()">UPDATE FULL DISPLAY</button>
+    
+    <button class="btn-update" onclick="save()">PUSH FULL UPDATE</button>
 </div>
 
 <script>
-    function loadExisting() {
+    function load() {
         const data = JSON.parse(localStorage.getItem('falkirkSettings') || '{}');
         if (data.event) {
             document.getElementById('e').value = data.event;
@@ -76,8 +52,6 @@
     }
 
     function cycleGroup() {
-        // Move "Next Group" into "Current Group"
-        // Keeps Current Event and Current Round the same
         document.getElementById('g').value = document.getElementById('ng').value;
         save();
     }
@@ -94,9 +68,7 @@
         };
         localStorage.setItem('falkirkSettings', JSON.stringify(data));
     }
-
-    window.onload = loadExisting;
+    window.onload = load;
 </script>
-
 </body>
 </html>
