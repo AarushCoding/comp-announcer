@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Comp Stage Display</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #0d0d0d;
             --text-main: #00ffcc;
             --text-sub: #ffcc00;
+            --progress-color: rgba(0, 255, 204, 0.08); /* Very subtle transparent green */
         }
 
         body {
@@ -23,46 +24,56 @@
             justify-content: center;
             overflow: hidden;
             transition: background-color 0.4s;
+            position: relative;
+        }
+
+        /* The Progress Bar Background Layer */
+        #bg-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%; /* Will be updated by JS */
+            background-color: var(--progress-color);
+            z-index: 0;
+            transition: width 1s linear;
         }
 
         body.silence { background-color: #300; }
+        body.silence #bg-progress { background-color: rgba(255, 0, 0, 0.05); }
 
-        /* Flashing Live Dot & Comp ID Input */
-        #status-bar {
+        /* Ensure all content stays above the progress background */
+        #status-bar, #api-controls, .main-display, .bottom-ticker, #silence-banner {
             position: absolute;
+            z-index: 10;
+        }
+
+        #status-bar {
             top: 30px;
             left: 30px;
             display: flex;
             align-items: center;
             gap: 10px;
-            font-family: 'Bebas Neue', cursive;
-            font-size: 1.5rem;
-            letter-spacing: 2px;
+            font-weight: 700;
+            font-size: 1rem;
             color: #555;
         }
         
-        #api-controls {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            display: flex;
-            gap: 10px;
-            z-index: 100;
-        }
+        #api-controls { top: 30px; right: 30px; display: flex; gap: 10px; }
 
         .comp-input {
             background: #1a1a1a;
             border: 1px solid #333;
             color: #00ffcc;
-            font-family: sans-serif;
-            padding: 5px 10px;
+            font-family: 'Montserrat', sans-serif;
+            padding: 8px 15px;
             border-radius: 4px;
             outline: none;
+            font-size: 0.9rem;
         }
 
         .dot {
-            height: 12px;
-            width: 12px;
+            height: 12px; width: 12px;
             background-color: #f00;
             border-radius: 50%;
             display: inline-block;
@@ -74,77 +85,46 @@
             100% { opacity: 1; }
         }
 
-        /* Center Content */
-        .main-display {
-            text-align: center;
-            width: 90%;
-        }
-        .label { 
-            font-family: 'Bebas Neue', cursive;
-            font-size: 2.5rem; 
-            color: #666; 
-            letter-spacing: 5px;
-            margin-bottom: 10px;
-        }
-        .event-title { 
-            font-size: 12rem; 
-            line-height: 0.9;
-            margin: 0;
-            color: var(--text-main);
-            font-weight: 400;
-        }
-        .round-info {
-            font-size: 4rem;
-            color: #fff;
-            margin: 20px 0;
-        }
-        .group-info {
-            font-size: 8rem;
-            color: var(--text-sub);
-            margin: 0;
-        }
+        .main-display { text-align: center; width: 90%; position: relative !important; }
+        .label { font-family: 'Bebas Neue', cursive; font-size: 2.5rem; color: #666; letter-spacing: 5px; margin-bottom: 10px; }
+        .event-title { font-size: 12rem; line-height: 0.9; margin: 0; color: var(--text-main); font-family: 'Bebas Neue', cursive; }
+        .round-info { font-size: 4rem; color: #fff; margin: 20px 0; font-family: 'Bebas Neue', cursive; }
+        .group-info { font-size: 8rem; color: var(--text-sub); margin: 0; font-family: 'Bebas Neue', cursive; }
 
-        /* Bottom Ticker */
         .bottom-ticker {
-            position: absolute;
             bottom: 0;
             width: 100%;
-            background: #1a1a1a;
+            background: rgba(26, 26, 26, 0.8);
             padding: 20px 0;
             display: flex;
             justify-content: center;
             gap: 50px;
             border-top: 1px solid #333;
         }
-        .ticker-item {
-            font-size: 1.8rem;
-            display: flex;
-            gap: 15px;
-        }
+        .ticker-item { font-size: 1.8rem; display: flex; gap: 15px; }
         .ticker-label { color: #666; font-family: 'Bebas Neue'; }
-        .ticker-value { color: #fff; }
+        .ticker-value { color: #fff; font-family: 'Bebas Neue'; }
 
-        /* Silence Banner */
         #silence-banner {
-            display: none;
-            position: absolute;
-            top: 80px;
+            top: 85px;
             background: yellow;
             color: black;
             padding: 5px 30px;
             font-weight: bold;
             font-size: 1.2rem;
             border-radius: 50px;
-            font-family: 'Montserrat';
+            display: none;
         }
     </style>
 </head>
 <body>
 
+    <div id="bg-progress"></div>
+
     <div id="status-bar"><span class="dot"></span> LIVE COMP SYSTEM</div>
     
     <div id="api-controls">
-        <input type="text" id="compId" class="comp-input" placeholder="WCA COMP ID" onchange="saveCompId()">
+        <input type="text" id="compId" class="comp-input" placeholder="WCA Comp ID..." onchange="saveCompId()">
     </div>
 
     <div id="silence-banner">SHHH! SILENCE REQUIRED</div>
@@ -167,70 +147,44 @@
             <span class="ticker-label">ROUND:</span>
             <span id="next-round" class="ticker-value">--</span>
         </div>
-        <div class="ticker-item">
-            <span class="ticker-label">GROUP:</span>
-            <span id="next-group" class="ticker-value">--</span>
-        </div>
     </div>
 
-    
-        
     <script>
         let wcaSchedule = [];
-    
+
         function saveCompId() {
             const id = document.getElementById('compId').value.trim();
             localStorage.setItem('falkirk_wca_id', id);
             fetchWCA();
         }
-    
-        // This function cleans up the long WCA names
+
         function cleanName(name) {
             if (!name) return "--";
-            
-            let clean = name;
-            // Split by comma or hyphen to remove "Round 1", "Final", etc. from the Event title
-            clean = clean.split(',')[0].split(' - ')[0];
-    
-            // Replace long names with short names
+            let clean = name.split(',')[0].split(' - ')[0];
             const replacements = {
-                "3x3x3 Cube": "3x3",
-                "2x2x2 Cube": "2x2",
-                "4x4x4 Cube": "4x4",
-                "5x5x5 Cube": "5x5",
-                "6x6x6 Cube": "6x6",
-                "7x7x7 Cube": "7x7",
-                "3x3x3 Blindfolded": "3BLD",
-                "4x4x4 Blindfolded": "4BLD",
-                "5x5x5 Blindfolded": "5BLD",
-                "3x3x3 Multi-Blind": "MBLD",
-                "3x3x3 One-Handed": "3OH",
-                "Megaminx": "Megaminx",
-                "Pyraminx": "Pyraminx",
-                "Skewb": "Skewb",
-                "Square-1": "Square-1",
-                "Clock": "Clock"
+                "3x3x3 Cube": "3x3", "4x4x4 Cube": "4x4", "5x5x5 Cube": "5x5",
+                "3x3x3 Blindfolded": "3BLD", "4x4x4 Blindfolded": "4BLD", "5x5x5 Blindfolded": "5BLD",
+                "3x3x3 Multi-Blind": "MBLD", "3x3x3 One-Handed": "3OH", "Megaminx": "Megaminx",
+                "Pyraminx": "Pyraminx", "Skewb": "Skewb", "Square-1": "Square-1", "Clock": "Clock"
             };
-    
             for (const [formal, short] of Object.entries(replacements)) {
                 if (clean.includes(formal)) return short;
             }
             return clean;
         }
-    
-        // This function tries to extract just the number for the Round
+
         function getRound(name) {
             if (name.toLowerCase().includes("final")) return "Final";
             const match = name.match(/Round (\d+)/);
             return match ? match[1] : "";
         }
-    
+
         async function fetchWCA() {
             const id = document.getElementById('compId').value.trim();
             if (!id) return;
             try {
-                const response = await fetch(`https://www.worldcubeassociation.org/api/v0/competitions/${id}/wcif/public`);
-                if (!response.ok) throw new Error("Not found");
+                const response = await fetch(`https://www.worldcubeassociation.org/api/v1/competitions/${id}/wcif/public`);
+                if (!response.ok) throw new Error("Not Found");
                 const data = await response.json();
                 wcaSchedule = data.schedule.venues[0].rooms[0].activities;
                 document.getElementById('status-bar').innerHTML = '<span class="dot"></span> LIVE COMP SYSTEM';
@@ -238,53 +192,50 @@
                 document.getElementById('status-bar').innerText = "❌ ID NOT FOUND (CHECK CAPS)";
             }
         }
-    
+
         function update() {
             const manualData = JSON.parse(localStorage.getItem('falkirkSettings') || '{}');
             const now = new Date();
-            
-            let displayData = {
-                event: manualData.event || "STANDBY",
-                round: manualData.round || "",
-                group: manualData.group || "--",
-                next: manualData.next || "--",
-                nextRound: manualData.nextRound || "",
-                nextGroup: manualData.nextGroup || "--",
-                isSilent: manualData.isSilent === "true"
-            };
-    
-            // API LOGIC
+            let displayData = { event: manualData.event || "STANDBY", round: manualData.round || "", group: manualData.group || "--", next: manualData.next || "--", nextRound: manualData.nextRound || "", isSilent: manualData.isSilent === "true" };
+
+            let progressWidth = 0;
+
             if (wcaSchedule.length > 0 && (manualData.event === "STANDBY" || !manualData.event)) {
                 const currentAct = wcaSchedule.find(act => {
                     const start = new Date(act.startTime);
                     const end = new Date(act.endTime);
                     return now >= start && now <= end;
                 });
-    
+                
                 const nextAct = wcaSchedule.find(act => new Date(act.startTime) > now);
-    
+
                 if (currentAct) {
                     displayData.event = cleanName(currentAct.name);
                     displayData.round = getRound(currentAct.name);
                     displayData.group = "API SYNC";
                     if (currentAct.activityCode.includes('bf')) displayData.isSilent = true;
+
+                    // Calculate Progress
+                    const start = new Date(currentAct.startTime).getTime();
+                    const end = new Date(currentAct.endTime).getTime();
+                    const total = end - start;
+                    const elapsed = now.getTime() - start;
+                    progressWidth = Math.min(100, (elapsed / total) * 100);
                 }
-    
                 if (nextAct) {
                     displayData.next = cleanName(nextAct.name);
                     displayData.nextRound = getRound(nextAct.name);
                 }
             }
-    
-            // RENDER
+
+            // Update UI
+            document.getElementById('bg-progress').style.width = progressWidth + "%";
             document.getElementById('cur-event').innerText = displayData.event;
             document.getElementById('cur-round').innerText = displayData.round === "Final" ? "Final" : (displayData.round ? "Round " + displayData.round : "--");
             document.getElementById('cur-group').innerText = displayData.group;
-            
             document.getElementById('next-event').innerText = displayData.next;
             document.getElementById('next-round').innerText = displayData.nextRound === "Final" ? "Final" : (displayData.nextRound ? "Round " + displayData.nextRound : "--");
-            document.getElementById('next-group').innerText = displayData.nextGroup;
-    
+
             if (displayData.isSilent) {
                 document.body.classList.add('silence');
                 document.getElementById('silence-banner').style.display = "block";
@@ -293,23 +244,13 @@
                 document.getElementById('silence-banner').style.display = "none";
             }
         }
-    
-        // Fullscreen and Initializers
-        document.addEventListener('dblclick', () => {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else document.exitFullscreen();
-        });
-    
+
         window.onload = () => {
             const savedId = localStorage.getItem('falkirk_wca_id');
-            if (savedId) {
-                document.getElementById('compId').value = savedId;
-                fetchWCA();
-            }
+            if (savedId) { document.getElementById('compId').value = savedId; fetchWCA(); }
             setInterval(update, 1000);
             setInterval(fetchWCA, 60000);
         };
     </script>
-    
 </body>
 </html>
